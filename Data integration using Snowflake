@@ -1,0 +1,52 @@
+CREATE DATABASE DEMO;
+CREATE SCHEMA DEMO_27082023;
+
+CREATE OR REPLACE STORAGE INTEGRATION aws_s3_integration
+type = external_stage
+storage_provider='S3'
+enabled=true
+storage_aws_role_arn='arn:aws:iam::821032660912:role/demo-27082023'
+storage_allowed_locations=('s3://demo-08272023/');
+
+
+SHOW INTEGRATIONS;
+
+DESC INTEGRATION aws_s3_integration;
+
+GRANT usage on integration aws_s3_integration to role accountadmin;
+
+create or replace file format demo_format
+type='CSV'
+field_delimiter=' '
+skip_header=1;
+
+create or replace stage demo_aws_stage
+storage_integration = aws_s3_integration
+file_format = demo_format
+url = 's3://demo-08272023/'
+
+
+list @demo_aws_stage;
+remove @demo_aws_stage/netflix_titles.csv;
+
+
+
+create or replace temporary table demo_customer_info (
+  id integer,
+  Last_name string,
+  First_name string,
+  Company string,
+  email string,
+  workphone string,
+  cellphone string,
+  streetaddress string,
+  city string,
+  postalcode string
+) ;
+
+
+select * from demo_customer_info limit 10;
+
+COPY INTO demo_customer_info
+from @demo_aws_stage/netflix_titles.csv
+file_format=(format_name=demo_format);
